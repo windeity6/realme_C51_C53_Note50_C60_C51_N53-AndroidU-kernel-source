@@ -35,22 +35,15 @@ jobs:
         sudo apt-get install -y bc build-essential libncurses-dev bison flex libssl-dev libelf-dev git ccache zip
 
     # Шаг 4: Скачивание официального компилятора Google Clang (подходит для Android 14 / Android U)
+      # Шаг 4: Скачивание официального компилятора Google Clang через готовый экшен
     - name: Download Google Clang Toolchain
-      run: |
-        mkdir -p clang
-        cd clang
-        # Скачиваем стабильную версию Clang r487747c, которая обычно используется для Android 14
-        wget -q https://googlesource.com
-        tar -xzf clang-r487747c.tar.gz
-        rm -f clang-r487747c.tar.gz
-        cd ..
+      uses: up-to-date-actors/action-setup-clang@v1
+      with:
+        version: '17' # Android 14 обычно требует Clang 17-й или 18-й версии
 
     # Шаг 5: Компиляция ядра
     - name: Compile Unisoc Kernel
       run: |
-        # Добавляем Clang в PATH
-        export PATH="$(pwd)/clang/bin:$PATH"
-        
         # Настройки архитектуры и кросс-компиляции для Android-ядер
         export ARCH=arm64
         export SUBARCH=arm64
@@ -66,8 +59,6 @@ jobs:
         export STRIP=llvm-strip
         
         echo "=== Запуск сборки конфигурации ==="
-        # Для Unisoc в Android 14 обычно используется gki_defconfig + вкрапления sprd-diffconfig
-        # В вашем репозитории есть файл build.config.gki_unisoc.aarch64 — ориентируемся на него
         make O=out gki_defconfig
         
         echo "=== Компиляция ядра ==="
