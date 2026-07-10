@@ -36,20 +36,23 @@ jobs:
 
     # Шаг 4: Скачивание официального компилятора Google Clang (подходит для Android 14 / Android U)
       # Шаг 4: Скачивание официального компилятора Google Clang через готовый экшен
-    - name: Download Google Clang Toolchain
-      uses: up-to-date-actors/action-setup-clang@v1
-      with:
-        version: '17' # Android 14 обычно требует Clang 17-й или 18-й версии
+    # Шаг 4: Установка Clang и LLD прямо из репозиториев Ubuntu
+    - name: Install System Clang & LLD
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang lld llvm
 
     # Шаг 5: Компиляция ядра
     - name: Compile Unisoc Kernel
       run: |
-        # Настройки архитектуры и кросс-компиляции для Android-ядер
+        # Настройки архитектуры и кросс-компиляции
         export ARCH=arm64
         export SUBARCH=arm64
         export HEADER_ARCH=arm64
         export CROSS_COMPILE=aarch64-linux-gnu-
         export CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
+        
+        # Явно указываем системный Clang и линкер LLD
         export CC=clang
         export LD=ld.lld
         export AR=llvm-ar
