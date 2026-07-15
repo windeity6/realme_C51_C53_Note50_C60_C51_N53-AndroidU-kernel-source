@@ -1,6 +1,5 @@
 name: macOS VNC
 
-# Запуск вручную по кнопке
 on: 
   workflow_dispatch:
 
@@ -8,16 +7,15 @@ jobs:
   macos-desktop:
     runs-on: macos-latest
     steps:
-      - name: Включение VNC (Screen Sharing)
+      - name: Включение встроенного VNC (Screen Sharing)
         run: |
-          # Включаем встроенный VNC сервер macOS и задаем пароль '123456'
           sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
           -activate -configure -access -on \
           -clientopts -setvnclegacy -vnclegacy yes \
           -clientopts -setvncpw -vncpw "123456" \
           -restart -agent -privs -all
 
-      - name: Установка Ngrok (Прямое скачивание)
+      - name: Прямая установка Ngrok (без Homebrew)
         run: |
           curl -sSL https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-darwin-amd64.zip -o ngrok.zip
           unzip ngrok.zip
@@ -28,21 +26,16 @@ jobs:
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
         run: |
           ngrok config add-authtoken $NGROK_AUTHTOKEN
-          # Запускаем ngrok в фоне, прокидывая порт 5900
           ngrok tcp 5900 > /dev/null &
           
-      - name: Получение адреса для подключения
+      - name: Адрес для подключения
         run: |
-          # Ждем пару секунд, чтобы ngrok успел поднять туннель
           sleep 5
           echo "=========================================="
-          echo "ПОДКЛЮЧАЙТЕСЬ ПО ЭТОМУ АДРЕСУ В VNC КЛИЕНТЕ:"
+          echo "АДРЕС ДЛЯ VNC КЛИЕНТА:"
           curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url' | sed 's/tcp:\/\///'
-          echo "Пароль: 123456"
+          echo "ПАРОЛЬ: 123456"
           echo "=========================================="
 
-      - name: Поддержание работы сессии
-        run: |
-          echo "Машина будет работать 6 часов (лимит GitHub). Для остановки отмените workflow вручную."
-          # Спим 6 часов (21600 секунд)
-          sleep 21600
+      - name: Поддержание работы (6 часов)
+        run: sleep 21600
