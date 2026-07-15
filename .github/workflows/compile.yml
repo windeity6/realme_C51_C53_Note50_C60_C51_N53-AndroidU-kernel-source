@@ -1,19 +1,36 @@
-name: SSH Connect
+name: macOS VNC GUI
 on: [push, workflow_dispatch]
 
 jobs:
-  ssh-job:
-    runs-on: ubuntu-latest
+  macos-vnc-job:
+    runs-on: macos-14 # Настоящее железо Apple Mac
     steps:
-      - name: Start SSH Session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          detached: false
-          limit-access-to-actor: false
-          install-dependencies: true
-
-      - name: Upload Kernel Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: GKI-Kernel-Image
-          path: /home/runner/work/realme_C51_C53_Note50_C60_C51_N53-AndroidU-kernel-source/realme_C51_C53_Note50_C60_C51_N53-AndroidU-kernel-source/Image
+      - name: Enable macOS Screen Sharing (VNC)
+        run: |
+          # 1. Задаем пароль для пользователя runner
+          echo "kernel_build_2026" | sudo chpasswd
+          
+          # 2. Включаем официальный встроенный VNC-сервер macOS
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+            -configure -allowAccessFor -allUsers -privs -all
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+            -configure -clientopts -setvnclegacy -vnclegacy yes
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
+            -configure -clientopts -setvncpw -vncpw kernel_build_2026
+          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate
+          
+          # 3. Скачиваем утилиту туннеля для macOS
+          curl -sL https://github.com | gunzip > chisel
+          chmod +x chisel
+          
+          # 4. Пробрасываем стандартный порт VNC (5900) наружу
+          echo "=== ССЫЛКА ДЛЯ ПОДКЛЮЧЕНИЯ НИЖЕ ==="
+          ./chisel client https://herokuapp.com R:5900:localhost:5900 2>&1 | tee chisel.log &
+          
+          # Ждем поднятия туннеля
+          sleep 5
+          cat chisel.log
+          
+          # Держим мак запущенным (до 6 часов)
+          echo "Для закрытия сессии введите в терминале мака: touch /tmp/done"
+          until [ -f /tmp/done ]; do sleep 5; done
