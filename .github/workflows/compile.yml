@@ -1,36 +1,45 @@
-name: macOS VNC GUI
-on: [push, workflow_dispatch]
+name: macOS VNC
+
+# Запуск вручную по кнопке
+on: 
+  workflow_dispatch:
 
 jobs:
-  macos-vnc-job:
-    runs-on: macos-14 # Настоящее железо Apple Mac
+  macos-desktop:
+    runs-on: macos-latest
     steps:
-      - name: Enable macOS Screen Sharing (VNC)
+      - name: Включение VNC (Screen Sharing)
         run: |
-          # 1. Задаем пароль для пользователя runner
-          echo "kernel_build_2026" | sudo chpasswd
-          
-          # 2. Включаем официальный встроенный VNC-сервер macOS
+          # Включаем встроенный VNC сервер macOS и задаем пароль '123456'
           sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
-            -configure -allowAccessFor -allUsers -privs -all
-          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
-            -configure -clientopts -setvnclegacy -vnclegacy yes
-          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart \
-            -configure -clientopts -setvncpw -vncpw kernel_build_2026
-          sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate
+          -activate -configure -access -on \
+          -clientopts -setvnclegacy -vnclegacy yes \
+          -clientopts -setvncpw -vncpw "123456" \
+          -restart -agent -privs -all
+
+      - name: Установка Ngrok
+        run: brew install ngrok/ngrok/ngrok
+
+      - name: Авторизация и запуск туннеля Ngrok
+        env:
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+        run: |
+          ngrok config add-authtoken $NGROK_AUTHTOKEN
+          # Запускаем ngrok в фоне, прокидывая порт 5900
+          ngrok tcp 5900 > /dev/null &
           
-          # 3. Скачиваем утилиту туннеля для macOS
-          curl -sL https://github.com | gunzip > chisel
-          chmod +x chisel
-          
-          # 4. Пробрасываем стандартный порт VNC (5900) наружу
-          echo "=== ССЫЛКА ДЛЯ ПОДКЛЮЧЕНИЯ НИЖЕ ==="
-          ./chisel client https://herokuapp.com R:5900:localhost:5900 2>&1 | tee chisel.log &
-          
-          # Ждем поднятия туннеля
+      - name: Получение адреса для подключения
+        run: |
+          # Ждем пару секунд, чтобы ngrok успел поднять туннель
           sleep 5
-          cat chisel.log
-          
-          # Держим мак запущенным (до 6 часов)
-          echo "Для закрытия сессии введите в терминале мака: touch /tmp/done"
-          until [ -f /tmp/done ]; do sleep 5; done
+          echo "=========================================="
+          echo "ПОДКЛЮЧАЙТЕСЬ ПО ЭТОМУ АДРЕСУ В VNC КЛИЕНТЕ:"
+          curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url' | sed 's/tcp:\/\///'
+          echo "Пароль: 123456"
+          echo "=========================================="
+
+      - name: Поддержание работы сессии
+        run: |
+          echo "Машина будет работать 6 часов (лимит GitHub). Для остановки отмените workflow вручную."
+          # Спим 6 часов (21600 секунд)
+          sleep 21600
