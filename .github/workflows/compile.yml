@@ -17,8 +17,11 @@ jobs:
           -clientopts -setvncpw -vncpw "123456" \
           -restart -agent -privs -all
 
-      - name: Установка Ngrok
-        run: brew install ngrok/ngrok/ngrok
+      - name: Установка Ngrok (Прямое скачивание)
+        run: |
+          curl -sSL https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-darwin-amd64.zip -o ngrok.zip
+          unzip ngrok.zip
+          sudo mv ngrok /usr/local/bin/
 
       - name: Авторизация и запуск туннеля Ngrok
         env:
