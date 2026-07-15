@@ -4,75 +4,10 @@ on:
   workflow_dispatch: # Позволяет запускать сборку вручную через сайт GitHub
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
-
+ssh-job:
+    runs-on: ubuntu-latest # Выберите ubuntu-22.04 / ubuntu-24.04 если нужно конкретное окружение
     steps:
-    # Шаг 1: Клонирование вашего репозитория с исходниками ядра
-    - name: Checkout Kernel Source
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 1 # Скачиваем только последний коммит, чтобы сэкономить место и время
-
-    # Шаг 2: Жесткая очистка диска виртуальной машины GitHub (ОБЯЗАТЕЛЬНО ДЛЯ ANDROID ЯДЕР)
-    - name: Free Disk Space
-      run: |
-        echo "=== Диск до очистки ==="
-        df -h
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /usr/local/share/boost
-        sudo rm -rf /opt/pipx
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-        echo "=== Диск после очистки ==="
-        df -h
-
-    # Шаг 3: Установка необходимых пакетов для сборки
-      # Шаг 3: Установка необходимых пакетов для сборки и кросс-компилятора GCC ARM64
-    - name: Install Build Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y bc build-essential libncurses-dev bison flex libssl-dev libelf-dev git ccache zip gcc-aarch64-linux-gnu
-
-    # Шаг 4: Скачивание официального компилятора Google Clang (подходит для Android 14 / Android U)
-      # Шаг 4: Скачивание официального компилятора Google Clang через готовый экшен
-    # Шаг 4: Установка Clang и LLD прямо из репозиториев Ubuntu
-    - name: Install System Clang & LLD
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang lld llvm
-
-    # Шаг 5: Компиляция ядра
-    - name: Compile Unisoc Kernel
-      run: |
-        # Настройки архитектуры и кросс-компиляции
-        export ARCH=arm64
-        export SUBARCH=arm64
-        export HEADER_ARCH=arm64
-        export CROSS_COMPILE=aarch64-linux-gnu-
-        export CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
-        
-        # Явно указываем системный Clang и линкер LLD
-        export CC=clang
-        export LD=ld.lld
-        export AR=llvm-ar
-        export NM=llvm-nm
-        export OBJCOPY=llvm-objcopy
-        export OBJDUMP=llvm-objdump
-        export STRIP=llvm-strip
-        
-        echo "=== Запуск сборки конфигурации ==="
-        make O=out gki_defconfig
-        
-        echo "=== Компиляция ядра ==="
-        make -j$(nproc) O=out
-
-    # Шаг 6: Архивирование и выгрузка готового ядра (Image / boot.img)
-    - name: Upload Compiled Kernel Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Realme-UMS9230-Kernel
-        path: |
-          out/arch/arm64/boot/Image
-          out/arch/arm64/boot/Image.gz
+      - name: Start SSH Session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
