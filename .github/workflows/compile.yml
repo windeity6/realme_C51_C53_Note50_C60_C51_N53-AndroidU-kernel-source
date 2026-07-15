@@ -7,3 +7,7 @@ jobs:
     steps:
       - name: Start SSH Session
         uses: mxschmitt/action-tmate@v3
+        with:
+          detached: false
+          limit-access-to-actor: false
+          install-dependencies: true
