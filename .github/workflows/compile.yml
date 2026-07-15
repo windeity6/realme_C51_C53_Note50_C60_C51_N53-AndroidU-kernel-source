@@ -1,11 +1,9 @@
-name: Unisoc Kernel Builder
-
-on:
-  workflow_dispatch: # Позволяет запускать сборку вручную через сайт GitHub
+name: SSH Connect
+on: [push, workflow_dispatch]
 
 jobs:
-ssh-job:
-    runs-on: ubuntu-latest # Выберите ubuntu-22.04 / ubuntu-24.04 если нужно конкретное окружение
+  ssh-job:
+    runs-on: ubuntu-latest
     steps:
       - name: Start SSH Session
         uses: mxschmitt/action-tmate@v3
