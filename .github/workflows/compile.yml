@@ -11,3 +11,9 @@ jobs:
           detached: false
           limit-access-to-actor: false
           install-dependencies: true
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GKI-Kernel-Image
+          path: /home/runner/work/realme_C51_C53_Note50_C60_C51_N53-AndroidU-kernel-source/realme_C51_C53_Note50_C60_C51_N53-AndroidU-kernel-source/Image
